@@ -1,0 +1,16 @@
+.note-page {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.note-page > .top-bar {
+  padding: 10px 14px;
+
+  .top-bar-back {
+    font-size: 0.875rem;
+  }
+
+  .top-bar-actions button {
+    font-size: 0.8125rem;
+  }
+}

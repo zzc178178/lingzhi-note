@@ -1,0 +1,43 @@
+.css-tree {
+  padding: 8px 0;
+}
+
+.tree-node {
+  margin-bottom: 2px;
+}
+
+.tree-node-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #f8f9fc;
+  font-size: 26px;
+}
+
+.tree-node-label.has-children {
+  cursor: pointer;
+  font-weight: 600;
+
+  &:active {
+    background: #e8ecf1;
+  }
+}
+
+.tree-toggle {
+  font-size: 24px;
+  color: #667eea;
+  width: 20px;
+  text-align: center;
+}
+
+.tree-label-text {
+  color: #1a2332;
+}
+
+.tree-children {
+  border-left: 2px solid #e8ecf1;
+  margin-left: 16px;
+  padding-left: 8px;
+}

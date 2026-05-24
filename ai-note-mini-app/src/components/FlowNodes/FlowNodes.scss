@@ -1,0 +1,31 @@
+.css-flow {
+  overflow-x: auto;
+  padding: 8px 0;
+}
+
+.css-flow-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.css-flow-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.css-node {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 24px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.css-arrow {
+  font-size: 28px;
+  color: #667eea;
+  font-weight: 700;
+}

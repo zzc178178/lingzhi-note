@@ -1,0 +1,90 @@
+.notes-page {
+  min-height: 100vh;
+  padding: 24px 20px 120px;
+}
+
+.search-bar {
+  margin-bottom: 24px;
+}
+
+.search-input {
+  width: 100%;
+  height: 80px;
+  border-radius: 40px;
+  padding: 0 28px;
+  font-size: 28px;
+  background: #fff;
+  border: 2px solid #e8ecf1;
+}
+
+.note-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.note-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: var(--radius-card);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+}
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.card-tag {
+  display: inline-block;
+  background: var(--color-tag-blue);
+  color: #667eea;
+  padding: 2px 12px;
+  border-radius: var(--radius-tag);
+  font-size: 22px;
+  width: fit-content;
+}
+
+.card-title {
+  font-size: 30px;
+  font-weight: 600;
+}
+
+.card-date {
+  font-size: 24px;
+  color: #aaa;
+}
+
+.card-arrow {
+  font-size: 36px;
+  color: #ccc;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 120px 40px;
+}
+
+.empty-icon {
+  font-size: 80px;
+  display: block;
+  margin-bottom: 20px;
+}
+
+.empty-text {
+  display: block;
+  font-size: 32px;
+  color: var(--color-text-secondary);
+  margin-bottom: 8px;
+}
+
+.empty-hint {
+  display: block;
+  font-size: 26px;
+  color: #bbb;
+}

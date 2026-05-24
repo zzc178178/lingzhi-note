@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>{{TITLE}}</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+      font-size: 16px;
+      color: #1a2332;
+      background: #f0f2f5;
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 20px 16px 40px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 20px;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 300px;
+      height: 300px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 50%;
+    }
+
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -10%;
+      width: 200px;
+      height: 200px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 50%;
+    }
+
+    .tag {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      position: relative;
+      z-index: 1;
+      line-height: 1.3;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      opacity: 0.85;
+      margin-top: 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tab-bar {
+      position: sticky;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 0 16px 12px;
+      background: linear-gradient(to top, #f0f2f5 70%, transparent);
+    }
+
+    .tab-nav {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08), 0 2px 12px rgba(0, 0, 0, 0.04);
+      overflow: hidden;
+    }
+
+    .tab-item {
+      flex: 1;
+      text-align: center;
+      padding: 12px 0;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: #1a2332;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .tab-item.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .tab-content {
+      display: none;
+      padding: 0;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .section {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .section-desc {
+      font-size: 15px;
+      color: #5a6a7e;
+      margin-bottom: 16px;
+    }
+
+    .text-content {
+      font-size: 28px;
+      line-height: 1.8;
+      padding: 12px 0;
+    }
+
+    .text-content h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 28px 0 12px;
+    }
+
+    .text-content h3 {
+      font-size: 19px;
+      font-weight: 600;
+      margin: 24px 0 10px;
+    }
+
+    .text-content p {
+      margin: 12px 0;
+    }
+
+    .text-content ul,
+    .text-content ol {
+      padding-left: 24px;
+      margin: 12px 0;
+    }
+
+    .text-content li {
+      margin: 6px 0;
+    }
+
+    .text-content blockquote {
+      border-left: 3px solid #e8ecf1;
+      padding: 8px 16px;
+      margin: 16px 0;
+      background: #f8f9fc;
+      border-radius: 0 8px 8px 0;
+      color: #5a6a7e;
+      font-style: italic;
+    }
+
+    .text-content pre {
+      background: #1e1e2e;
+      color: #e0e0e0;
+      padding: 16px 20px;
+      border-radius: 12px;
+      overflow-x: auto;
+      margin: 16px 0;
+    }
+
+    .text-content code {
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+    }
+
+    .highlight-box {
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .highlight-box.highlight-blue {
+      background: #e8f0fe;
+      border-left: 4px solid #667eea;
+    }
+
+    .highlight-box.highlight-green {
+      background: #e8faf0;
+      border-left: 4px solid #10b981;
+    }
+
+    .highlight-box.highlight-orange {
+      background: #fef4e8;
+      border-left: 4px solid #f59e0b;
+    }
+
+    .diagram-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .grid-card {
+      background: #f8f9fc;
+      border-radius: 12px;
+      padding: 16px 12px;
+    }
+
+    .grid-card-icon {
+      border: 2px solid #e8ecf1;
+      background: #fff;
+      text-align: center;
+    }
+
+    .grid-card-label {
+      font-size: 13px;
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    .grid-card-emoji {
+      font-size: 48px;
+      margin: 8px 0;
+      display: block;
+    }
+
+    .grid-card-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .grid-card-sub {
+      font-size: 13px;
+      color: #5a6a7e;
+    }
+
+    .grid-card-desc {
+      font-size: 13px;
+      color: #999;
+      line-height: 1.5;
+    }
+
+    .effect-bar {
+      background: linear-gradient(135deg, #e8faf0, #e8f0fe);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-top: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #10b981;
+      text-align: center;
+    }
+
+    .info-bar {
+      background: #f0f2f5;
+      border-radius: 8px;
+      padding: 10px 16px;
+      margin-top: 16px;
+      font-size: 14px;
+      color: #5a6a7e;
+      text-align: center;
+    }
+
+    .step-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px;
+      border-radius: 12px;
+    }
+
+    .step-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .step-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .step-desc {
+      font-size: 14px;
+      color: #5a6a7e;
+      margin-top: 4px;
+    }
+
+    .css-flow-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .css-node {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .css-arrow {
+      font-size: 20px;
+      color: #667eea;
+      font-weight: 700;
+    }
+
+    .tag-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .tag-card {
+      background: #f8f9fc;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .tag-card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .tag-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag-pill {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .tag-blue { background: #e8f0fe; color: #667eea; }
+    .tag-purple { background: #f0ebff; color: #7c3aed; }
+    .tag-green { background: #e8faf0; color: #10b981; }
+    .tag-orange { background: #fef4e8; color: #f59e0b; }
+
+    .footer-tags {
+      margin-top: 40px;
+      padding-top: 24px;
+      border-top: 1px solid #e8ecf1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .footer-tag {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .mermaid-container {
+      overflow-x: auto;
+      text-align: center;
+      padding: 16px 0;
+    }
+
+    .mermaid-container svg {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .text-area {
+      width: 100%;
+      min-height: 300px;
+      padding: 20px;
+      background: #fafbfc;
+      border: 2px dashed #e8ecf1;
+      border-radius: 12px;
+      font-size: 16px;
+      line-height: 1.8;
+      resize: vertical;
+    }
+
+    .generated-by {
+      text-align: center;
+      padding: 40px 0 20px;
+      font-size: 13px;
+      color: #ccc;
+    }
+
+    @media (max-width: 600px) {
+      .diagram-grid-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .tag-grid-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .container {
+        padding: 16px 12px 40px;
+      }
+    }
+  </style>
+  {{MERMAID_SCRIPT}}
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="tag">{{TAG}}</div>
+      <div class="title">{{TITLE}}</div>
+      <div class="subtitle">{{SUBTITLE}}</div>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab-nav">
+        <div class="tab-item active" onclick="switchTab('text', this)">📝 文字</div>
+        <div class="tab-item" onclick="switchTab('diagram', this)">🎨 图解</div>
+        <div class="tab-item" onclick="switchTab('notes', this)">✏️ 随手记</div>
+      </div>
+    </div>
+
+    <div class="tab-content active" id="tab-text">
+      <div class="text-content">
+        {{TEXT_CONTENT}}
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-diagram">
+      {{DIAGRAM_CONTENT}}
+    </div>
+
+    <div class="tab-content" id="tab-notes">
+      <div class="section">
+        <textarea class="text-area" placeholder="在这里写下你的思考和笔记...">{{USER_NOTES}}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="generated-by">
+    Generated by 灵知笔记 &middot; {{DATE}}
+  </div>
+
+  <script>
+    function switchTab(name, el) {
+      document.querySelectorAll('.tab-item').forEach(function (t) { t.classList.remove('active'); });
+      document.querySelectorAll('.tab-content').forEach(function (c) { c.classList.remove('active'); });
+      el.classList.add('active');
+      document.getElementById('tab-' + name).classList.add('active');
+    }
+
+    {{MERMAID_INIT}}
+  </script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+@import './styles/diagram.scss';
+
+page {
+  --color-primary: #667eea;
+  --color-primary-dark: #764ba2;
+  --color-bg: #f0f2f5;
+  --color-surface: #ffffff;
+  --color-text: #1a2332;
+  --color-text-secondary: #5a6a7e;
+  --color-text-muted: #aaa;
+  --color-white: #ffffff;
+  --color-tag-blue: #e8f0fe;
+  --color-tag-purple: #f0ebff;
+  --color-tag-green: #e8faf0;
+  --color-tag-orange: #fef4e8;
+  --color-border: #e8ecf1;
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --radius-card: 16px;
+  --radius-tag: 100px;
+
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 28px;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+page[data-theme='dark'] {
+  --color-primary: #818cf8;
+  --color-primary-dark: #a78bfa;
+  --color-bg: #0f172a;
+  --color-surface: #1e293b;
+  --color-text: #e2e8f0;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+  --color-white: #1e293b;
+  --color-tag-blue: #1e3a5f;
+  --color-tag-purple: #2d1f4e;
+  --color-tag-green: #1a3a2a;
+  --color-tag-orange: #3d2e1a;
+  --color-border: #334155;
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.3);
+  --color-primary-gradient: linear-gradient(135deg, #818cf8, #a78bfa);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}

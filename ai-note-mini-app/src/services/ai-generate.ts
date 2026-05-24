@@ -1,0 +1,483 @@
+import { NoteData, createNote } from '../utils/note-model'
+import { request } from '../utils/http'
+import { getStorage, setStorage } from '../utils/storage'
+
+export type DiagramModuleType = 'flow' | 'grid3' | 'step' | 'tagGrid' | 'tree' | 'effectBar' | 'infoBar'
+
+export interface DiagramModule {
+  type: DiagramModuleType
+  title: string
+  desc: string
+  items: Array<{
+    label?: string
+    emoji?: string
+    title?: string
+    sub?: string
+    desc?: string
+    num?: string
+    bg?: string
+    text?: string
+    arrow?: string
+    pills?: string[]
+    children?: DiagramModule['items']
+  }>
+}
+
+const DEFAULT_API_URL = 'https://api.deepseek.com'
+const API_URL_KEY = 'ai_note_api_url'
+const API_KEY_KEY = 'ai_note_api_key'
+const API_MODEL_KEY = 'ai_note_api_model'
+
+export function getApiConfig(): { url: string; key: string; model: string } {
+  return {
+    url: getStorage(API_URL_KEY) || DEFAULT_API_URL,
+    key: getStorage(API_KEY_KEY) || '',
+    model: getStorage(API_MODEL_KEY) || 'deepseek-chat'
+  }
+}
+
+export function setApiConfig(config: Partial<{ url: string; key: string; model: string }>) {
+  if (config.url !== undefined) setStorage(API_URL_KEY, config.url)
+  if (config.key !== undefined) setStorage(API_KEY_KEY, config.key)
+  if (config.model !== undefined) setStorage(API_MODEL_KEY, config.model)
+}
+
+export function isApiConfigured(): boolean {
+  const { url, key } = getApiConfig()
+  return !!url && !!key
+}
+
+/* ========================================================
+   灵知笔记 - 双页签图文笔记生成 SYSTEM PROMPT
+   与 ai-note-2.0 skill 对齐
+   ======================================================== */
+
+const SYSTEM_PROMPT = `你是一个专业的笔记生成助手。你的任务是将用户提供的网页链接或文字内容转化为精美的双页签图文笔记。
+
+你必须输出纯 JSON 格式，不要输出任何其他内容。
+
+## 输出 JSON 格式
+
+{
+  "title": "笔记标题（简短）",
+  "subtitle": "副标题/补充说明",
+  "tag": "分类标签",
+  "source": "原文链接（无则为空字符串）",
+  "text_content": "文字页签的完整 HTML 内容",
+  "diagram_content": "图解页签的完整 HTML 内容"
+}
+
+⚠️ HTML 属性必须使用单引号：JSON 字符串内部使用双引号包裹，HTML 属性用单引号避免转义冲突。
+✅ 正确：<div class='tag-pill tag-blue'>内容</div>
+❌ 错误：<div class="tag-pill tag-blue">内容</div>
+
+## 内容质量标准（必读）
+
+每个知识点必须写得有血有肉，不是骨架：
+
+- 每个框架/概念/方案展开度：说明设计思想（为什么这么做）、实现细节（具体参数/数据）、优缺点或边界、数据效果（如有）
+- 每个知识点的 text_content 中必须 ≥5 个 HTML 块（h标签/ul/table/p/code 等，不算标题本身）
+- 少于这个深度需要补充
+
+### 文字页签标题层级规则
+
+h2 — 主要章节（每篇至少 4 个 h2）
+├─ h3 — 子主题/要点分类
+│  ├─ p/ul/ol — 正文内容
+│  ├─ .highlight-box — 重点强调
+│  └─ blockquote — 引用
+
+编号规范：
+- h2 标题前缀：一、二、三、……（中文大写数字 + 顿号）
+- h3 标题前缀：1. 2. 3. ……（阿拉伯数字 + 点号）
+- 列表内细分可用 (1)、(2)、(3) 或 ①②③
+- 每个 h2 下至少有一个 h3 或直接跟内容
+- h2 → h3 → p/ul 一级一级往下，不得跳级
+
+文字页签可用 HTML 组件：
+- 正文标题和段落：h2/h3/p/ul/ol
+- 单条重点强调：<div class='highlight-box highlight-blue'>...</div>（蓝/橙/绿三种）
+- 引用观点：<blockquote>...</blockquote>
+- 源码示例：<pre><code>...</code></pre>
+- 对比数据：<table>
+- 内联标记：<span class='tag-*'>...</span>
+- 底部关键词：<div class='footer-tags'><span class='footer-tag tag-blue'>标签</span></div>
+- 文字页签不要出现任何卡片样式组件
+
+### 图解页签视觉图表选型
+
+图解页签的内容必须放"一眼扫过去就能获得洞察"的视觉内容。
+
+不同类型的内容使用不同的组件（以下组件在 template.css 中都有样式定义）：
+
+1. 复杂系统架构/多分支流程（>4节点）→ CSS Flow Nodes 多行排列
+   多行示例：<div class='css-flow'>
+     <div class='css-flow-row'><span class='css-node blue'>输入</span><span class='css-arrow'>→</span><span class='css-node green'>处理A</span><span class='css-arrow'>→</span><span class='css-node orange'>输出</span></div>
+     <div class='css-flow-row'><span class='css-node green'>处理B</span><span class='css-arrow'>→</span><span class='css-node orange'>分支结果</span></div>
+   </div>
+   节点类：blue / green / orange
+
+2. 简单线性流程（≤4节点，无分支）→ CSS Flow Nodes 单行
+   示例：<div class='css-flow'><div class='css-flow-row'><span class='css-node blue'>节点1</span><span class='css-arrow'>→</span><span class='css-node green'>节点2</span></div></div>
+   节点类：blue / green / orange
+
+3. 并列概念/方案对比（3-4项）→ CSS 多列卡片网格
+   ⚠️ 容器和卡片必须用 inline style 设布局，class 只用于装饰样式！
+   3列：容器 style='display:flex;flex-wrap:wrap;margin-top:8px'，每个卡片 style='width:33.3%;box-sizing:border-box'
+   4列：每个卡片 style='width:25%;box-sizing:border-box'
+   示例（3列）：<div style='display:flex;flex-wrap:wrap;margin-top:8px'>
+     <div class='grid-card' style='width:33.3%;box-sizing:border-box'><div class='grid-card-label'>标签</div><div class='grid-card-title'>标题</div><div class='grid-card-desc'>描述</div></div>
+     ...重复
+   </div>
+   带图标版本加 grid-card-icon 和 grid-card-emoji + grid-card-sub：
+   <div style='display:flex;flex-wrap:wrap;margin-top:8px'>
+     <div class='grid-card grid-card-icon' style='width:33.3%;box-sizing:border-box'><div class='grid-card-label'>角色一</div><div class='grid-card-emoji'>🧮</div><div class='grid-card-title'>数据采集Agent</div><div class='grid-card-sub'>效率提升8倍+</div><div class='grid-card-desc'>自主爬取归集，自动识别格式</div></div>
+     ...重复
+   </div>
+   注意：emoji 必须是一个单独的 emoji 字符，不能为空
+
+4. 步骤递进（1→2→3顺序关系）→ CSS 纵向步骤卡片
+   示例：<div class='step-list'>
+     <div class='step-item' style='background:#e8f0fe;'>
+       <div class='step-circle' style='background:#667eea;'>1</div>
+       <div class='step-content'><div class='step-title'>第一级<span class='step-tag' style='color:#667eea;'>⚡标签</span></div><div class='step-desc'>描述</div></div>
+     </div>
+   </div>
+   颜色递进规范：蓝(#e8f0fe/#667eea)→紫(#f0ebff/#7c3aed)→橙(#fef4e8/#f59e0b)
+
+5. 多维度信息分组/功能要点 → CSS 两列网格+标签组
+   ⚠️ 容器和卡片必须用 inline style 设布局！
+   示例：<div style='display:flex;flex-wrap:wrap;margin-top:8px'>
+     <div class='tag-card' style='width:50%;box-sizing:border-box'><div class='tag-card-title'>分组名</div><div class='tag-group'><span class='tag-pill tag-blue'>标签1</span><span class='tag-pill tag-purple'>标签2</span></div></div>
+   </div>
+   标签颜色：tag-blue(功能) / tag-purple(技术) / tag-green(性能) / tag-orange(监控)
+
+6. 树形结构/分类/选型决策 → CSS Tree
+   示例：<div class='tree-wrap'><ul><li><span class='node-root'>根节点</span><ul><li><span class='node-label'>分支 <span class='arrow'>→</span> 说明</span></li><li><span class='node-leaf'>叶子 <span class='tree-tag tag-green'>推荐</span></span></li></ul></li></ul></div>
+
+7. 数据总结 → 效果条/信息条
+   <div class='effect-bar'>📊 效果：xxx</div>
+   <div class='info-bar'>说明信息 <span class='bar-sep'>|</span> 更多信息</div>
+
+重要规则：
+- diagram_content 中不同类型的模块用 <div class='diagram-section'> 包裹
+- 每个 diagram-section 中可以包含：h3 标题、diagram-desc 描述、布局组件、effect-bar/info-bar
+- 必须包含至少 3 个不同的 diagram-section 模块
+- 图解页签不使用 Mermaid 语法（小程序不支持渲染），复杂流程用 CSS Flow Nodes 多行
+- 表格统一放在 text_content 中，图解页签用卡片/标签/树形替代
+- 确保输出合法 JSON，HTML 中的换行用 \\n 表示`
+
+interface AIResponse {
+  title: string
+  subtitle: string
+  tag: string
+  source: string
+  text_content: string
+  diagram_content: string
+}
+
+interface ChatCompletionResponse {
+  choices?: Array<{
+    message?: {
+      content?: string
+    }
+  }>
+}
+
+async function callAI(userContent: string): Promise<AIResponse> {
+  const { url, key, model } = getApiConfig()
+
+  const endpoint = url.endsWith('/')
+    ? `${url}v1/chat/completions`
+    : `${url}/v1/chat/completions`
+
+  try {
+    const res = await request<ChatCompletionResponse>({
+      url: endpoint,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`
+      },
+      data: {
+        model,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: userContent }
+        ],
+        temperature: 0.7,
+        max_tokens: 8192
+      },
+      timeout: 120000
+    })
+
+    const content = res.choices?.[0]?.message?.content
+    if (!content) throw new Error('AI 返回内容为空')
+
+    // 尝试提取 JSON
+    const jsonMatch = content.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) throw new Error(`AI 返回格式异常: ${content.substring(0, 200)}...`)
+
+    const parsed = JSON.parse(jsonMatch[0]) as AIResponse
+
+    if (!parsed.title || !parsed.text_content) {
+      throw new Error('AI 返回内容不完整')
+    }
+
+    // 确保 diagram_content 不为空
+    if (!parsed.diagram_content) {
+      parsed.diagram_content = MOCK_DIAGRAM_CONTENT
+    }
+
+    // source 字段兼容处理
+    if (!parsed.source) {
+      parsed.source = ''
+    }
+
+    return parsed
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err)
+    console.error('AI 调用失败:', errorMsg)
+    throw new Error(`AI 调用失败: ${errorMsg}`)
+  }
+}
+
+export async function generateNoteFromUrl(url: string): Promise<NoteData> {
+  if (!isApiConfigured()) return generateMockNote(url)
+
+  try {
+    const aiResult = await callAI(
+      `请根据以下网页链接生成笔记：\n\n链接：${url}`
+    )
+
+    return createNote({
+      title: aiResult.title,
+      subtitle: aiResult.subtitle,
+      tag: aiResult.tag,
+      source: aiResult.source || url,
+      textContent: aiResult.text_content,
+      diagramContent: aiResult.diagram_content
+    })
+  } catch (err) {
+    console.error('AI 生成失败，使用 mock 数据:', err)
+    return generateMockNote(url)
+  }
+}
+
+export async function generateNoteFromText(text: string): Promise<NoteData> {
+  if (!isApiConfigured()) return generateMockNote(text)
+
+  try {
+    const aiResult = await callAI(
+      `请根据以下内容生成笔记：\n\n${text}`
+    )
+
+    return createNote({
+      title: aiResult.title,
+      subtitle: aiResult.subtitle,
+      tag: aiResult.tag,
+      source: aiResult.source || '',
+      textContent: aiResult.text_content,
+      diagramContent: aiResult.diagram_content
+    })
+  } catch (err) {
+    console.error('AI 生成失败，使用 mock 数据:', err)
+    return generateMockNote(text)
+  }
+}
+
+/* ===== Mock 数据（用于 API 未配置或返回异常时的回退） ===== */
+
+const MOCK_TEXT_CONTENT = `
+<h2>📖 核心概念</h2>
+<p>灵知笔记系统是一个智能化的知识管理工具，能够自动将任意内容转换为结构化的双页签笔记。</p>
+
+<div class='highlight-box highlight-blue'>
+<strong>✨ 核心价值</strong>：将碎片化信息转化为可回顾、可分享的知识资产，阅读效率提升 3 倍以上。
+</div>
+
+<h3>1. 三大核心能力</h3>
+<p>灵知笔记系统围绕三个核心能力构建：</p>
+<ul>
+<li><strong>内容理解</strong>：自动提取 URL 或文本中的核心知识点，识别逻辑关系和层级结构</li>
+<li><strong>智能摘要</strong>：生成简洁的要点总结和关键概念，降低信息过载</li>
+<li><strong>可视化</strong>：将复杂逻辑转化为直观的图表和流程图，实现"一眼看懂"</li>
+</ul>
+
+<h3>2. 工作流程</h3>
+<p>笔记生成系统采用四阶段流水线，从原始内容到精美笔记：</p>
+<ol>
+<li><strong>内容获取</strong> — 从网页、文本、音视频获取原始内容，支持多种输入格式</li>
+<li><strong>内容分析</strong> — 提取 3-8 个核心知识点，识别逻辑关系和重要性排序</li>
+<li><strong>结构化</strong> — 组织为文字 + 图解两种互补形式</li>
+<li><strong>渲染输出</strong> — 生成精美的双页签 HTML 笔记，适配移动端和桌面端</li>
+</ol>
+
+<h2>二、双页签设计理念</h2>
+<p>双页签设计的核心原则是"分工互补"：文字页签负责深度阐述，图解页签负责视觉总结。</p>
+
+<h3>1. 文字页签：完整阐述</h3>
+<p>文字页签的内容适合<strong>逐行阅读</strong>，用于完整理解知识：</p>
+<ul>
+<li>使用分层标题（h2→h3→p）构建清晰的知识骨架</li>
+<li>高亮框标注重点内容，区分核心观点和辅助说明</li>
+<li>引用块展示第三方观点和数据，增强可信度</li>
+<li>底部标签区提供关键词索引，便于回顾</li>
+</ul>
+
+<blockquote>💡 一个好的灵知笔记应该让读者既能深度阅读（文字页签），又能一眼看懂（图解页签）。两者缺一不可。</blockquote>
+
+<h3>2. 图解页签：视觉总结</h3>
+<p>图解页签的内容适合<strong>扫读</strong>，用于快速获取洞察：</p>
+<ul>
+<li>流程图展示完整链路和分支逻辑</li>
+<li>卡片网格并列展示概念对比</li>
+<li>步骤列表展示递进关系</li>
+<li>标签组多维分类，一眼看懂全貌</li>
+</ul>
+
+<h2>三、适用场景</h2>
+<p>灵知笔记系统覆盖多个知识管理场景：</p>
+
+<h3>1. 技术文档学习</h3>
+<p>面对长篇技术文档，灵知笔记自动提取核心架构、关键接口和实现细节，生成结构化摘要。例如：读一篇 RAG 论文，自动生成检索流程、数据准备策略、工程优化方案三个模块。</p>
+
+<h3>2. 产品方案分析</h3>
+<p>分析竞品方案或产品设计文档时，灵知笔记自动对比不同方案的优劣势，输出并列对比卡片和决策树。</p>
+
+<h3>3. 知识管理整理</h3>
+<p>将碎片化信息（网页书签、微信文章、学习笔记）统一转化为结构化的知识资产，建立个人知识库。</p>
+
+<div class='footer-tags'>
+<span class='footer-tag tag-blue'>灵知笔记</span>
+<span class='footer-tag tag-purple'>知识管理</span>
+<span class='footer-tag tag-green'>可视化</span>
+<span class='footer-tag tag-orange'>双页签</span>
+</div>
+`
+
+const MOCK_DIAGRAM_CONTENT = `
+<div class='diagram-section'>
+  <h3>🏗️ 笔记生成流程</h3>
+  <div class='diagram-desc'>从输入到输出的完整处理链路</div>
+  <div class='css-flow'>
+    <div class='css-flow-row'>
+      <span class='css-node blue'>用户输入</span>
+      <span class='css-arrow'>→</span>
+      <span class='css-node blue'>内容获取</span>
+      <span class='css-arrow'>→</span>
+      <span class='css-node blue'>知识提取</span>
+      <span class='css-arrow'>→</span>
+      <span class='css-node blue'>结构化</span>
+      <span class='css-arrow'>→</span>
+      <span class='css-node green'>渲染输出</span>
+    </div>
+  </div>
+</div>
+
+<div class='diagram-section'>
+  <h3>📦 三阶段方案</h3>
+  <div class='diagram-desc'>逐步增强的内容处理能力</div>
+  <div style='display:flex;flex-wrap:wrap;margin-top:8px'>
+    <div class='grid-card grid-card-icon' style='width:33.3%;box-sizing:border-box'>
+      <div class='grid-card-label'>能力一</div>
+      <div class='grid-card-emoji'>🧠</div>
+      <div class='grid-card-title'>内容理解</div>
+      <div class='grid-card-sub'>AI 驱动的知识提取引擎</div>
+      <div class='grid-card-desc'>自动分析原始内容，提取核心知识点和逻辑关系</div>
+    </div>
+    <div class='grid-card grid-card-icon' style='width:33.3%;box-sizing:border-box'>
+      <div class='grid-card-label'>能力二</div>
+      <div class='grid-card-emoji'>📝</div>
+      <div class='grid-card-title'>智能摘要</div>
+      <div class='grid-card-sub'>结构化知识归纳</div>
+      <div class='grid-card-desc'>生成层次分明的文字笔记，保留核心信息</div>
+    </div>
+    <div class='grid-card grid-card-icon' style='width:33.3%;box-sizing:border-box'>
+      <div class='grid-card-label'>能力三</div>
+      <div class='grid-card-emoji'>🎨</div>
+      <div class='grid-card-title'>可视化</div>
+      <div class='grid-card-sub'>图形化信息呈现</div>
+      <div class='grid-card-desc'>将复杂逻辑转为直观的图表和流程图</div>
+    </div>
+  </div>
+  <div class='effect-bar'>📊 效果：阅读效率提升 3 倍，信息保留率提高 60%</div>
+</div>
+
+<div class='diagram-section'>
+  <h3>⚡ 实施步骤</h3>
+  <div class='diagram-desc'>分阶段推进</div>
+  <div class='step-list'>
+    <div class='step-item' style='background:#e8f0fe;'>
+      <div class='step-circle' style='background:#667eea;'>1</div>
+      <div class='step-content'>
+        <div class='step-title'>第一步 <span class='step-tag' style='color:#667eea;'>⚡ 收集</span></div>
+        <div class='step-desc'>收集原始内容，支持网页链接和纯文本输入</div>
+      </div>
+    </div>
+    <div class='step-item' style='background:#f0ebff;'>
+      <div class='step-circle' style='background:#7c3aed;'>2</div>
+      <div class='step-content'>
+        <div class='step-title'>第二步 <span class='step-tag' style='color:#7c3aed;'>🧠 分析</span></div>
+        <div class='step-desc'>AI 智能分析内容，提取核心知识点</div>
+      </div>
+    </div>
+    <div class='step-item' style='background:#fef4e8;'>
+      <div class='step-circle' style='background:#f59e0b;'>3</div>
+      <div class='step-content'>
+        <div class='step-title'>第三步 <span class='step-tag' style='color:#f59e0b;'>🎨 生成</span></div>
+        <div class='step-desc'>生成精美图文笔记，支持分享和导出</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class='diagram-section'>
+  <h3>🏷️ 功能要点</h3>
+  <div class='diagram-desc'>多维度能力分组</div>
+  <div style='display:flex;flex-wrap:wrap;margin-top:8px'>
+    <div class='tag-card' style='width:50%;box-sizing:border-box'>
+      <div class='tag-card-title'>📤 内容输入</div>
+      <div class='tag-group'>
+        <span class='tag-pill tag-blue'>网页链接</span>
+        <span class='tag-pill tag-blue'>纯文本</span>
+      </div>
+    </div>
+    <div class='tag-card' style='width:50%;box-sizing:border-box'>
+      <div class='tag-card-title'>🎯 核心能力</div>
+      <div class='tag-group'>
+        <span class='tag-pill tag-purple'>知识提取</span>
+        <span class='tag-pill tag-purple'>图表生成</span>
+      </div>
+    </div>
+    <div class='tag-card' style='width:50%;box-sizing:border-box'>
+      <div class='tag-card-title'>⚡ 输出形式</div>
+      <div class='tag-group'>
+        <span class='tag-pill tag-green'>文字</span>
+        <span class='tag-pill tag-green'>图解笔记</span>
+      </div>
+    </div>
+    <div class='tag-card' style='width:50%;box-sizing:border-box'>
+      <div class='tag-card-title'>📊 数据指标</div>
+      <div class='tag-group'>
+        <span class='tag-pill tag-orange'>阅读效率 +300%</span>
+        <span class='tag-pill tag-orange'>信息保留 +60%</span>
+      </div>
+    </div>
+  </div>
+  <div class='info-bar'><strong> 适用场景：</strong>技术文档 <span class='bar-sep'>|</span> 产品分析 <span class='bar-sep'>|</span> 知识整理</div>
+</div>
+`
+
+async function generateMockNote(source: string): Promise<NoteData> {
+  await new Promise((resolve) => setTimeout(resolve, 2000))
+
+  return createNote({
+    title: '灵知笔记 - 双页签图文笔记生成器',
+    subtitle: '智能知识管理 · 从内容到笔记只需一秒',
+    tag: 'AI · 知识管理',
+    source,
+    textContent: MOCK_TEXT_CONTENT,
+    diagramContent: MOCK_DIAGRAM_CONTENT
+  })
+}

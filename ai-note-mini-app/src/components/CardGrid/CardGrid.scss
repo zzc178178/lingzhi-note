@@ -1,0 +1,92 @@
+.diagram-section {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.diagram-title {
+  display: block;
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.diagram-desc {
+  display: block;
+  font-size: 24px;
+  color: #5a6a7e;
+  margin-bottom: 20px;
+}
+
+.diagram-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.grid-card {
+  background: #f8f9fc;
+  border-radius: 12px;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.grid-card-icon {
+  border: 2px solid #e8ecf1;
+  background: #fff;
+  align-items: center;
+  text-align: center;
+}
+
+.grid-card-label {
+  font-size: 20px;
+  color: #667eea;
+  font-weight: 600;
+}
+
+.grid-card-emoji {
+  font-size: 48px;
+  margin: 8px 0;
+}
+
+.grid-card-title {
+  font-size: 26px;
+  font-weight: 600;
+  color: #1a2332;
+}
+
+.grid-card-sub {
+  font-size: 22px;
+  color: #5a6a7e;
+}
+
+.grid-card-desc {
+  font-size: 22px;
+  color: #999;
+  line-height: 1.5;
+}
+
+.info-bar {
+  background: #f0f2f5;
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin-top: 16px;
+  font-size: 22px;
+  color: #5a6a7e;
+  text-align: center;
+}
+
+.effect-bar {
+  background: linear-gradient(135deg, #e8faf0, #e8f0fe);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 12px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #10b981;
+  text-align: center;
+}

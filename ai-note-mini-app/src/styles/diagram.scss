@@ -1,0 +1,212 @@
+/* 图解页签全局样式 */
+
+/* 三列卡片 */
+.diagram-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.grid-card {
+  background: #f8f9fc;
+  border-radius: 12px;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.grid-card-icon {
+  border: 2px solid #e8ecf1;
+  background: #fff;
+  align-items: center;
+  text-align: center;
+}
+
+.grid-card-label {
+  font-size: 20px;
+  color: #667eea;
+  font-weight: 600;
+}
+
+.grid-card-emoji {
+  font-size: 48px;
+  margin: 8px 0;
+}
+
+.grid-card-title {
+  font-size: 26px;
+  font-weight: 600;
+  color: #1a2332;
+}
+
+.grid-card-sub {
+  font-size: 22px;
+  color: #5a6a7e;
+}
+
+.grid-card-desc {
+  font-size: 22px;
+  color: #999;
+  line-height: 1.5;
+}
+
+/* 步骤列表 */
+.step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.step-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.step-title {
+  font-size: 26px;
+  font-weight: 600;
+  color: #1a2332;
+}
+
+.step-desc {
+  font-size: 24px;
+  color: #5a6a7e;
+  line-height: 1.5;
+}
+
+/* CSS 流程 */
+.css-flow {
+  overflow-x: auto;
+  padding: 8px 0;
+}
+
+.css-flow-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.css-node {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 24px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.css-arrow {
+  font-size: 28px;
+  color: #667eea;
+  font-weight: 700;
+}
+
+/* 标签网格 */
+.tag-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.tag-card {
+  background: #f8f9fc;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.tag-card-title {
+  display: block;
+  font-size: 26px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #1a2332;
+}
+
+.tag-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+/* CSS 树 */
+.css-tree {
+  padding: 8px 0;
+}
+
+.tree-node {
+  margin-bottom: 2px;
+}
+
+.tree-node-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #f8f9fc;
+  font-size: 26px;
+}
+
+.tree-children {
+  border-left: 2px solid #e8ecf1;
+  margin-left: 16px;
+  padding-left: 8px;
+}
+
+/* 信息条和效果条 */
+.info-bar {
+  background: #f0f2f5;
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin-top: 16px;
+  font-size: 22px;
+  color: #5a6a7e;
+  text-align: center;
+}
+
+.effect-bar {
+  background: linear-gradient(135deg, #e8faf0, #e8f0fe);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 12px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #10b981;
+  text-align: center;
+}
+
+/* 颜色变体 */
+.blue { background: #e8f0fe; color: #667eea; }
+.green { background: #e8faf0; color: #10b981; }
+.orange { background: #fef4e8; color: #f59e0b; }
+.purple { background: #f0ebff; color: #7c3aed; }
+
+.tag-blue { background: #e8f0fe; color: #667eea; }
+.tag-green { background: #e8faf0; color: #10b981; }
+.tag-orange { background: #fef4e8; color: #f59e0b; }
+.tag-purple { background: #f0ebff; color: #7c3aed; }
