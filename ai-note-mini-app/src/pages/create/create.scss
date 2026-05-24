@@ -111,3 +111,68 @@
 .btn-generate--hover {
   opacity: 0.85;
 }
+
+/* ——— Progress Steps ——— */
+.progress-steps {
+  margin-top: 32px;
+  padding: 24px;
+  background: #fff;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 0;
+  opacity: 0.35;
+  transition: opacity 0.4s ease;
+}
+
+.step.active {
+  opacity: 1;
+}
+
+.step.current .step-num {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+}
+
+.step-num {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+  background: #e8ecf1;
+  color: #94a3b8;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.step.active .step-num {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+}
+
+.step-info {
+  flex: 1;
+}
+
+.step-title {
+  display: block;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.step-desc {
+  display: block;
+  font-size: 24px;
+  color: #64748b;
+}

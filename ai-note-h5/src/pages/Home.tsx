@@ -6,12 +6,18 @@ import './Home.scss'
 
 type GenStatus = 'idle' | 'fetching' | 'ai' | 'done'
 
-const STATUS_LABEL: Record<GenStatus, string> = {
-  idle: '生成笔记',
-  fetching: '正在抓取网页...',
-  ai: 'AI 分析中...',
-  done: '渲染中...',
+const STATUS_CONFIG: Record<GenStatus, { label: string; step: number }> = {
+  idle: { label: '生成笔记', step: 0 },
+  fetching: { label: '正在抓取网页...', step: 1 },
+  ai: { label: 'AI 分析内容...', step: 2 },
+  done: { label: '生成笔记中...', step: 3 },
 }
+
+const STEPS = [
+  { num: 1, title: '抓取内容', desc: '读取网页或文字' },
+  { num: 2, title: 'AI 分析', desc: '提取核心要点' },
+  { num: 3, title: '生成笔记', desc: '排版美化输出' },
+]
 
 export default function Home() {
   const navigate = useNavigate()
@@ -21,6 +27,7 @@ export default function Home() {
   const [status, setStatus] = useState<GenStatus>('idle')
   const [error, setError] = useState('')
   const loading = status !== 'idle'
+  const currentStep = STATUS_CONFIG[status].step
   const apiReady = isApiConfigured()
 
   const handleGenerate = useCallback(async () => {
@@ -117,8 +124,33 @@ export default function Home() {
         disabled={loading || (!url.trim() && !text.trim())}
         onClick={handleGenerate}
       >
-        {loading ? STATUS_LABEL[status] : STATUS_LABEL.idle}
+        {loading ? (
+          <span className="btn-loading">
+            <span className="spinner" />
+            {STATUS_CONFIG[status].label}
+          </span>
+        ) : (
+          STATUS_CONFIG.idle.label
+        )}
       </button>
+
+      {loading && (
+        <div className="progress-steps">
+          {STEPS.map((s) => {
+            const active = currentStep >= s.num
+            const current = currentStep === s.num
+            return (
+              <div key={s.num} className={`step ${active ? 'active' : ''} ${current ? 'current' : ''}`}>
+                <div className="step-num">{active && !current ? '✓' : s.num}</div>
+                <div className="step-info">
+                  <div className="step-title">{s.title}</div>
+                  <div className="step-desc">{s.desc}</div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       <div className="bottom-nav">
         <button onClick={() => navigate('/notes')}>我的笔记</button>

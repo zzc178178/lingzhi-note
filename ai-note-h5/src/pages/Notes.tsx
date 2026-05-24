@@ -66,6 +66,16 @@ export default function Notes() {
                   <div className="card-date">{note.createdAt.substring(0, 10)}</div>
                 </div>
                 <button
+                  className="card-share"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const shareUrl = `${window.location.origin}/note/${note.id}`
+                    navigator.clipboard.writeText(shareUrl)
+                      .then(() => alert('链接已复制'))
+                      .catch(() => alert('复制失败'))
+                  }}
+                >🔗</button>
+                <button
                   className="card-delete"
                   onClick={(e) => {
                     e.stopPropagation()

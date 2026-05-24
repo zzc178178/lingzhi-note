@@ -11,7 +11,7 @@ export default function Create() {
   const [mode, setMode] = useState<'url' | 'text'>('url')
   const [url, setUrl] = useState('')
   const [text, setText] = useState('')
-  const { isLoading, wrap } = useLoading()
+  const { isLoading, step, setStep, wrap } = useLoading()
   const [apiReady, setApiReady] = useState(false)
   const [errorDetail, setErrorDetail] = useState('')
 
@@ -34,8 +34,8 @@ export default function Create() {
     try {
       const note = await wrap(
         mode === 'url'
-          ? generateNoteFromUrl(url.trim())
-          : generateNoteFromText(text.trim())
+          ? generateNoteFromUrl(url.trim(), setStep)
+          : generateNoteFromText(text.trim(), setStep)
       )
       console.log('[create] note.id=', note.id, 'title=', note.title)
       saveNote(note)
@@ -110,8 +110,38 @@ export default function Create() {
         disabled={isLoading || (!url.trim() && !text.trim())}
         onClick={handleGenerate}
       >
-        {isLoading ? (apiReady ? 'AI 正在分析内容...' : '生成示例笔记中...') : '🚀 生成笔记'}
+        {isLoading
+          ? step === 'fetching'
+            ? '正在抓取内容...'
+            : step === 'ai'
+              ? 'AI 分析中...'
+              : '生成笔记中...'
+          : '🚀 生成笔记'}
       </Button>
+
+      {isLoading && (
+        <View className='progress-steps'>
+          {[
+            { key: 'fetching', num: 1, title: '抓取内容', desc: '读取网页或文字' },
+            { key: 'ai', num: 2, title: 'AI 分析', desc: '提取核心要点' },
+            { key: 'done', num: 3, title: '生成笔记', desc: '排版美化输出' },
+          ].map((s) => {
+            const active = step ? ['fetching', 'ai', 'done'].indexOf(step) + 1 >= s.num : false
+            const current = step === s.key
+            return (
+              <View key={s.key} className={`step ${active ? 'active' : ''} ${current ? 'current' : ''}`}>
+                <View className='step-num'>
+                  <Text>{active && !current ? '✓' : s.num}</Text>
+                </View>
+                <View className='step-info'>
+                  <Text className='step-title'>{s.title}</Text>
+                  <Text className='step-desc'>{s.desc}</Text>
+                </View>
+              </View>
+            )
+          })}
+        </View>
+      )}
     </View>
   )
 }

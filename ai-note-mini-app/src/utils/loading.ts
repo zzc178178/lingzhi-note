@@ -2,13 +2,17 @@ import { useState, useCallback } from 'react'
 
 export type LoadingState = 'idle' | 'loading' | 'success' | 'error'
 
+export type GenStep = 'fetching' | 'ai' | 'done'
+
 interface UseLoadingReturn {
   status: LoadingState
+  step: GenStep | null
   isLoading: boolean
   isSuccess: boolean
   isError: boolean
   error: string | null
   startLoading: () => void
+  setStep: (step: GenStep) => void
   setSuccess: () => void
   setError: (message: string) => void
   reset: () => void
@@ -17,11 +21,17 @@ interface UseLoadingReturn {
 
 export function useLoading(): UseLoadingReturn {
   const [status, setStatus] = useState<LoadingState>('idle')
+  const [step, setStepState] = useState<GenStep | null>(null)
   const [error, setErrorState] = useState<string | null>(null)
 
   const startLoading = useCallback(() => {
     setStatus('loading')
+    setStepState('fetching')
     setErrorState(null)
+  }, [])
+
+  const setStep = useCallback((s: GenStep) => {
+    setStepState(s)
   }, [])
 
   const setSuccess = useCallback(() => {
@@ -36,6 +46,7 @@ export function useLoading(): UseLoadingReturn {
 
   const reset = useCallback(() => {
     setStatus('idle')
+    setStepState(null)
     setErrorState(null)
   }, [])
 
@@ -54,11 +65,13 @@ export function useLoading(): UseLoadingReturn {
 
   return {
     status,
+    step,
     isLoading: status === 'loading',
     isSuccess: status === 'success',
     isError: status === 'error',
     error,
     startLoading,
+    setStep,
     setSuccess,
     setError,
     reset,

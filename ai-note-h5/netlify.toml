@@ -1,0 +1,9 @@
+# Netlify 配置文件 - 配置 serverless functions
+[build]
+  publish = "dist"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/fetch"
+  to = "/.netlify/functions/fetch"
+  status = 200

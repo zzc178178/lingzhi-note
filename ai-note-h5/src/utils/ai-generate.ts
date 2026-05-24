@@ -169,8 +169,40 @@ async function callAI(userContent: string): Promise<AIResponse> {
 
 // ============ 网页内容抓取 ============
 
+// 判断是否在 Netlify 部署环境
+function isNetlify() {
+  return window.location.hostname.includes('.netlify.app')
+}
+
+// 获取当前部署的服务器端代理地址
+function getServerProxyUrl(): string | null {
+  if (isNetlify()) {
+    // Netlify 部署使用 serverless function
+    return `${window.location.origin}/api/fetch`
+  }
+  
+  // 开发环境或其他部署
+  return getProxyUrl()
+}
+
 async function fetchPageContent(url: string): Promise<string | null> {
-  // 方案 1：CORS 代理（在线部署也能用，无需后端）
+  // 方案 1：服务器端代理（优先使用，反爬能力最强）
+  const serverProxy = getServerProxyUrl()
+  if (serverProxy) {
+    try {
+      const proxyUrl = `${serverProxy}?url=${encodeURIComponent(url)}`
+      console.log('[抓取] 使用服务器端代理:', serverProxy)
+      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(30000) })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.ok && data.text && data.text.length >= 100) return data.text
+      }
+    } catch (e: any) {
+      console.warn('[抓取] 服务器端代理失败:', e?.message)
+    }
+  }
+
+  // 方案 2：CORS 代理（备选方案）
   const corsProxies = [
     'https://api.allorigins.win/raw?url=',
     'https://corsproxy.io/?',
@@ -178,6 +210,7 @@ async function fetchPageContent(url: string): Promise<string | null> {
 
   for (const proxy of corsProxies) {
     try {
+      console.log('[抓取] 尝试 CORS 代理:', proxy)
       const res = await fetch(proxy + encodeURIComponent(url), {
         signal: AbortSignal.timeout(15000)
       })
@@ -201,58 +234,12 @@ async function fetchPageContent(url: string): Promise<string | null> {
 
       if (!text || text.length < 100) continue
       return text
-    } catch { /* 继续尝试 */ }
-  }
-
-  // 方案 2：本地 Python 代理（开发环境）
-  const proxyBase = getProxyUrl()
-  if (proxyBase) {
-    try {
-      const proxyUrl = `${proxyBase}/fetch?url=${encodeURIComponent(url)}`
-      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(30000) })
-      if (res.ok) {
-        const data = await res.json()
-        if (data.ok && data.text && data.text.length >= 100) return data.text
-      }
-    } catch { /* 代理未启动 */ }
-  }
-  const proxies = [
-    'https://api.allorigins.win/raw?url=',
-    'https://corsproxy.io/?',
-  ]
-
-  for (const proxy of proxies) {
-    try {
-      const res = await fetch(proxy + encodeURIComponent(url), {
-        signal: AbortSignal.timeout(15000)
-      })
-      if (!res.ok) continue
-      const html = await res.text()
-
-      if (/captcha|验证|login|403|404/.test(html.substring(0, 500))) continue
-
-      const mainMatch = html.match(/<(?:article|main)[^>]*>([\s\S]*?)<\/(?:article|main)>/i)
-        || html.match(/<[^>]+role="main"[^>]*>([\s\S]*?)<\/[^>]+>/i)
-        || html.match(/<[^>]+class="[^"]*(?:rich_media|content|article|post|entry)[^"]*"[^>]*>([\s\S]*?)<\/[^>]+>/i)
-
-      const body = mainMatch ? mainMatch[1] : html
-
-      let text = body
-        .replace(/<(script|style|nav|footer|header|aside|noscript|iframe|svg)[^>]*>[\s\S]*?<\/\1>/gi, '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&[a-z]+;|&#\d+;/gi, ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-
-      if (!text || text.length < 100) continue
-
-      return text
-    } catch {
-      continue
+    } catch (e: any) {
+      console.warn('[抓取] CORS 代理失败:', proxy, e?.message)
     }
   }
 
-  console.warn('无法抓取网页内容（可能需登录或反爬保护）')
+  console.warn('[抓取] 所有抓取方案均失败（可能需登录或反爬保护）')
   return null
 }
 

@@ -113,6 +113,7 @@
   overflow: hidden;
 }
 
+.card-share,
 .card-delete {
   font-size: 1rem;
   padding: 6px;
@@ -127,10 +128,14 @@
   .note-card:hover & {
     opacity: 1;
   }
+}
 
-  &:hover {
-    background: var(--danger-subtle);
-  }
+.card-share:hover {
+  background: var(--accent-glow);
+}
+
+.card-delete:hover {
+  background: var(--danger-subtle);
 }
 
 /* ——— Empty state override ——— */

@@ -25,6 +25,17 @@ export default function Note() {
     downloadNoteAsHtml(note)
   }
 
+  const handleShare = async () => {
+    if (!note) return
+    const shareUrl = `${window.location.origin}/note/${note.id}`
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      alert('链接已复制到剪贴板')
+    } catch {
+      alert('复制失败，请手动复制地址栏链接')
+    }
+  }
+
   const handleDelete = () => setShowDelete(true)
 
   const confirmDelete = () => {
@@ -54,6 +65,7 @@ export default function Note() {
           ← 返回
         </button>
         <div className="top-bar-actions">
+          <button onClick={handleShare}>分享</button>
           <button onClick={handleExport}>导出</button>
           <button className="danger" onClick={handleDelete}>删除</button>
         </div>

@@ -242,15 +242,19 @@ async function callAI(userContent: string): Promise<AIResponse> {
   }
 }
 
-export async function generateNoteFromUrl(url: string): Promise<NoteData> {
+export async function generateNoteFromUrl(
+  url: string,
+  onStep?: (step: 'fetching' | 'ai' | 'done') => void
+): Promise<NoteData> {
   if (!isApiConfigured()) return generateMockNote(url)
 
   try {
+    onStep?.('fetching')
     const aiResult = await callAI(
       `请根据以下网页链接生成笔记：\n\n链接：${url}`
     )
-
-    return createNote({
+    onStep?.('ai')
+    const note = createNote({
       title: aiResult.title,
       subtitle: aiResult.subtitle,
       tag: aiResult.tag,
@@ -258,21 +262,27 @@ export async function generateNoteFromUrl(url: string): Promise<NoteData> {
       textContent: aiResult.text_content,
       diagramContent: aiResult.diagram_content
     })
+    onStep?.('done')
+    return note
   } catch (err) {
     console.error('AI 生成失败，使用 mock 数据:', err)
     return generateMockNote(url)
   }
 }
 
-export async function generateNoteFromText(text: string): Promise<NoteData> {
+export async function generateNoteFromText(
+  text: string,
+  onStep?: (step: 'fetching' | 'ai' | 'done') => void
+): Promise<NoteData> {
   if (!isApiConfigured()) return generateMockNote(text)
 
   try {
+    onStep?.('fetching')
     const aiResult = await callAI(
       `请根据以下内容生成笔记：\n\n${text}`
     )
-
-    return createNote({
+    onStep?.('ai')
+    const note = createNote({
       title: aiResult.title,
       subtitle: aiResult.subtitle,
       tag: aiResult.tag,
@@ -280,6 +290,8 @@ export async function generateNoteFromText(text: string): Promise<NoteData> {
       textContent: aiResult.text_content,
       diagramContent: aiResult.diagram_content
     })
+    onStep?.('done')
+    return note
   } catch (err) {
     console.error('AI 生成失败，使用 mock 数据:', err)
     return generateMockNote(text)
