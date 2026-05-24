@@ -20,3 +20,8 @@ Thumbs.db
 # Local env
 .env
 .env.local
+
+# Local-only docs (keep local, do NOT upload to git)
+CLAUDE.md
+ai-note-h5/CLAUDE.md
+项目交接文档.md
