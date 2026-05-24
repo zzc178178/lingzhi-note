@@ -7,8 +7,9 @@
 [build.environment]
   NODE_VERSION = "18"
 
+# Functions 目录必须相对于 base 目录
 [functions]
-  directory = "../netlify/functions"
+  directory = "./netlify-functions"
 
 [[redirects]]
   from = "/api/fetch"
