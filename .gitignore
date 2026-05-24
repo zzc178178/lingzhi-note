@@ -25,6 +25,9 @@ Thumbs.db
 CLAUDE.md
 ai-note-h5/CLAUDE.md
 项目交接文档.md
+ai-note-h5/部署说明.md
+ai-note-h5/缓存策略设计.md
+ai-note-h5/优化方案.md
 
 # Local Netlify folder
 .netlify
