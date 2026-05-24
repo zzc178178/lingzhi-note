@@ -4,6 +4,7 @@ import NoteIframe from '../components/NoteIframe'
 import { getNote, deleteNote } from '../utils/storage'
 import { downloadNoteAsHtml } from '../utils/template-builder'
 import { NoteData } from '../utils/note-model'
+import { assetUrl } from '../utils/assets'
 import './Note.scss'
 
 export default function Note() {
@@ -49,7 +50,7 @@ export default function Note() {
     return (
       <div className="note-page">
         <div className="empty-state">
-          <div className="empty-icon">—</div>
+          <img className="empty-logo" src={assetUrl('/logo.svg')} alt="" />
           <div className="empty-text">笔记未找到</div>
           <div className="empty-hint">请从笔记列表重新打开</div>
           <button className="btn-primary" onClick={() => navigate('/notes')}>返回列表</button>

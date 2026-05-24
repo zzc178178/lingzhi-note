@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { generateNoteFromUrl, generateNoteFromText } from '../utils/ai-generate'
 import { saveNote, isApiConfigured } from '../utils/storage'
+import { assetUrl } from '../utils/assets'
 import './Home.scss'
 
 type GenStatus = 'idle' | 'fetching' | 'ai' | 'done'
@@ -62,7 +63,7 @@ export default function Home() {
   return (
     <div className="home-page">
       <div className="hero-section">
-        <div className="hero-mark">—</div>
+        <img className="hero-logo" src={assetUrl('/logo.svg')} alt="灵知笔记" />
         <h1 className="hero-title">
           灵知<span>笔记</span>
         </h1>

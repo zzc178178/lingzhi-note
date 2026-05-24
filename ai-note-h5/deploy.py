@@ -59,8 +59,7 @@ def deploy_cos():
             Bucket=BUCKET,
             WebsiteConfiguration={
                 'IndexDocument': {'Suffix': 'index.html'},
-                'ErrorDocument': {'Key': 'index.html'},
-                'RedirectAllRequestsTo': {'Protocol': 'https'}
+                'ErrorDocument': {'Key': 'index.html'}
             }
         )
     except Exception as e:
@@ -71,9 +70,20 @@ def deploy_cos():
         for fname in files:
             local = os.path.join(root, fname)
             key = os.path.relpath(local, DEPLOY_DIR).replace(os.sep, '/')
-            ct = 'text/html; charset=utf-8' if fname.endswith('.html') else \
-                 'text/css' if fname.endswith('.css') else \
-                 'application/javascript' if fname.endswith('.js') else 'text/plain'
+            if fname.endswith('.html'):
+                ct = 'text/html; charset=utf-8'
+            elif fname.endswith('.css'):
+                ct = 'text/css'
+            elif fname.endswith('.js'):
+                ct = 'application/javascript'
+            elif fname.endswith('.svg'):
+                ct = 'image/svg+xml'
+            elif fname.endswith('.png'):
+                ct = 'image/png'
+            elif fname.endswith('.ico'):
+                ct = 'image/x-icon'
+            else:
+                ct = 'text/plain'
             # 所有文件都 inline 显示，避免触发下载
             extra = {'ContentDisposition': 'inline'}
             with open(local, 'rb') as fh:

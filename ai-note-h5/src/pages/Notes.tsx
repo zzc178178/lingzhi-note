@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { NoteData } from '../utils/note-model'
 import { getAllNotes, deleteNote } from '../utils/storage'
+import { assetUrl } from '../utils/assets'
 import './Notes.scss'
 
 function snippet(note: NoteData): string {
@@ -46,7 +47,7 @@ export default function Notes() {
 
         {filtered.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">—</div>
+            <img className="empty-logo" src={assetUrl('/logo.svg')} alt="" />
             <div className="empty-text">还没有笔记</div>
             <div className="empty-hint">去首页创建第一篇灵知笔记</div>
             <button className="btn-primary" onClick={() => navigate('/')}>去创建</button>

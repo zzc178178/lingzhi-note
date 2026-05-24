@@ -215,41 +215,6 @@ async function fetchPageContent(url: string): Promise<string | null> {
       }
     } catch { /* 代理未启动 */ }
   }
-  const proxies = [
-    'https://api.allorigins.win/raw?url=',
-    'https://corsproxy.io/?',
-  ]
-
-  for (const proxy of proxies) {
-    try {
-      const res = await fetch(proxy + encodeURIComponent(url), {
-        signal: AbortSignal.timeout(15000)
-      })
-      if (!res.ok) continue
-      const html = await res.text()
-
-      if (/captcha|验证|login|403|404/.test(html.substring(0, 500))) continue
-
-      const mainMatch = html.match(/<(?:article|main)[^>]*>([\s\S]*?)<\/(?:article|main)>/i)
-        || html.match(/<[^>]+role="main"[^>]*>([\s\S]*?)<\/[^>]+>/i)
-        || html.match(/<[^>]+class="[^"]*(?:rich_media|content|article|post|entry)[^"]*"[^>]*>([\s\S]*?)<\/[^>]+>/i)
-
-      const body = mainMatch ? mainMatch[1] : html
-
-      let text = body
-        .replace(/<(script|style|nav|footer|header|aside|noscript|iframe|svg)[^>]*>[\s\S]*?<\/\1>/gi, '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&[a-z]+;|&#\d+;/gi, ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-
-      if (!text || text.length < 100) continue
-
-      return text
-    } catch {
-      continue
-    }
-  }
 
   console.warn('无法抓取网页内容（可能需登录或反爬保护）')
   return null
