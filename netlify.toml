@@ -1,8 +1,14 @@
 # Netlify 配置文件 - 配置 serverless functions
 [build]
   base = "ai-note-h5"
+  command = "npm run build"
   publish = "dist"
-  functions = "../netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[functions]
+  directory = "../netlify/functions"
 
 [[redirects]]
   from = "/api/fetch"
