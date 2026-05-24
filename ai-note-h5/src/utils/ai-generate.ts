@@ -58,13 +58,18 @@ h2 — 主要章节（根据内容自然划分，不强求数量）
 
 不同类型的内容使用不同的组件（以下组件在 template.css 中都有样式定义）：
 
-1. 复杂系统架构/多分支流程图（>4节点）→ Mermaid flowchart TB（纵向）
-   示例：<div class='mermaid'>flowchart TB\\nA[起点]-->B[终点]</div>
-   特殊符号避坑：≥改用>=，→改用->，≤改用<=，≠改用!=，下划线避免使用
+**⚠️ 优先级规则：流程链路类内容优先使用 CSS Flow Nodes，Mermaid 仅用于复杂场景**
 
-2. 简单线性流程（≤4节点，无分支）→ CSS Flow Nodes
-   示例：<div class='css-flow'><div class='css-flow-row'><span class='css-node blue'>节点1</span><span class='css-arrow'>→</span><span class='css-node green'>节点2</span></div></div>
-   节点类：blue / green / orange
+1. **流程链路/时序关系（优先使用）→ CSS Flow Nodes（彩色圆角矩形节点风格）**
+   适用场景：事件流程、因果链、步骤顺序、线性过程
+   示例：<div class='css-flow'><div class='css-flow-row'><span class='css-node orange'>服务员操作</span><span class='css-arrow'>→</span><span class='css-node orange'>故障电磁炉</span><span class='css-arrow'>→</span><span class='css-node green'>卡式炉加热</span><span class='css-arrow'>→</span><span class='css-node white'>爆炸</span></div></div>
+   节点类：blue（起始/信息）/ green（中间/正常）/ orange（关键/警告）/ white（结果/终点）
+   颜色递进：根据流程阶段自然过渡，起始用蓝色/橙色，中间用绿色，终点用白色
+
+2. 复杂系统架构/多分支流程图（>6节点或多分支）→ Mermaid flowchart（LR 横向优先，其次 TD 纵向）
+   示例：<div class='mermaid'>flowchart LR\nA[起点]-->B[分支1]\nA-->C[分支2]</div>
+   布局优先级：LR（横向）优先于 TD（纵向），根据内容宽度选择合适布局
+   特殊符号避坑：≥改用>=，→改用->，≤改用<=，≠改用!=，下划线避免使用
 
 3. 并列概念/方案对比（3-4项）→ CSS 多列卡片网格
    示例（3列）：<div class='diagram-grid-3'>
@@ -99,7 +104,7 @@ h2 — 主要章节（根据内容自然划分，不强求数量）
 - diagram_content 中不同类型的模块用 <div class='diagram-section'> 包裹
 - 每个 diagram-section 中可以包含：h3 标题、diagram-desc 描述、布局组件、effect-bar/info-bar
 - 必须包含至少 3 个不同的 diagram-section 模块
-- Mermaid 代码中不要用 ≥→≤≠≈∈ 等特殊符号，下划线避免使用
+- Mermaid 代码中不要用 ≥→≤≠≈∈ 等特殊符号，下划线避免使用；必须使用 flowchart LR 横向布局
 - 表格统一放在 text_content 中，图解页签用卡片/标签/树形替代
 - 确保输出合法 JSON，HTML 中的换行用 \\n 表示`
 
@@ -166,40 +171,77 @@ async function callAI(userContent: string): Promise<AIResponse> {
   return parsed
 }
 
-// ============ 网页内容抓取 ============
+// ============ 网页内容解析 ============
 
 async function fetchPageContent(url: string): Promise<string | null> {
-  // 方案 0：Netlify Serverless Function（生产环境，国内手机可用）
-  if (window.location.hostname.includes('netlify.app')) {
-    console.log('🔧 尝试使用 Netlify Function')
+  const hostname = window.location.hostname
+  const isPagesDev = hostname.includes('pages.dev')
+  const isNetlify = hostname.includes('netlify.app')
+  const isLocalDev = hostname === 'localhost' || hostname === '127.0.0.1'
+
+  // 方案 0：同域 Serverless Function（优先级最高，无跨域问题）
+  // Cloudflare Pages Function / Netlify Function 都走 /api/fetch
+  if (isPagesDev || isNetlify || isLocalDev) {
+    console.log('🏠 尝试使用同域 Serverless Function')
     try {
       const res = await fetch(`/api/fetch?url=${encodeURIComponent(url)}`, {
         signal: AbortSignal.timeout(30000)
       })
-      console.log('📡 Netlify Function 响应:', res.status, res.ok)
+      console.log('📡 同域 Function 响应:', res.status, res.ok)
       if (res.ok) {
         const data = await res.json()
-        console.log('📦 Netlify Function 返回数据:', { ok: data.ok, hasText: !!data.text, textLen: data.text?.length })
+        console.log('📦 同域 Function 返回:', { ok: data.ok, textLen: data.text?.length })
         if (data.ok && data.text && data.text.length >= 100) return data.text
       } else {
         const errText = await res.text()
-        console.error('❌ Netlify Function 错误:', res.status, errText)
+        console.error('❌ 同域 Function 错误:', res.status, errText)
       }
     } catch (e) {
-      console.error('❌ Netlify Function 异常:', e)
+      console.error('❌ 同域 Function 异常:', e)
     }
   }
 
-  // 方案 1：CORS 代理（备选方案）
+  // 方案 1：Cloudflare Worker（跨域备选）
+  const cfWorkerUrl = localStorage.getItem('cf_worker_url') || 'https://lingzhi-note-fetch.821928907.workers.dev'
+  if (!cfWorkerUrl.includes('your-worker-name')) {
+    console.log('☁️ 尝试使用 Cloudflare Worker')
+    try {
+      const res = await fetch(`${cfWorkerUrl}/fetch?url=${encodeURIComponent(url)}`, {
+        signal: AbortSignal.timeout(30000)
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.ok && data.text && data.text.length >= 100) return data.text
+      }
+    } catch (e) {
+      console.error('❌ Cloudflare Worker 异常:', e)
+    }
+  }
+
+  // 方案 2：CORS 代理（兜底方案）
   const corsProxies = [
-    'https://api.allorigins.win/raw?url=',
-    'https://corsproxy.io/?',
+    { url: 'https://api.codetabs.com/v1/proxy?quest=', needsEncode: true },
+    { url: 'https://api.allorigins.win/raw?url=', needsEncode: true },
+    { url: 'https://corsproxy.io/?url=', needsEncode: true },
+    { url: 'https://api.allorigins.xyz/raw?url=', needsEncode: true },
+    { url: 'https://thingproxy.freeboard.io/fetch?url=', needsEncode: true },
+    { url: 'https://api.quotecatalog.com/extract?url=', needsEncode: true },
+    { url: 'https://cors-anywhere.herokuapp.com/', needsEncode: false }, // 直接拼接
+    { url: 'https://api.rss2json.com/v1/api.json?rss_url=', needsEncode: true },
   ]
 
   for (const proxy of corsProxies) {
     try {
-      const res = await fetch(proxy + encodeURIComponent(url), {
-        signal: AbortSignal.timeout(15000)
+      const fullUrl = proxy.needsEncode 
+        ? proxy.url + encodeURIComponent(url)
+        : proxy.url + url
+      
+      const res = await fetch(fullUrl, {
+        signal: AbortSignal.timeout(30000),
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Mobile; Android 14; Mobile Safari) AppleWebKit/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+        }
       })
       if (!res.ok) continue
       const html = await res.text()
@@ -221,7 +263,9 @@ async function fetchPageContent(url: string): Promise<string | null> {
 
       if (!text || text.length < 100) continue
       return text
-    } catch { /* 继续尝试 */ }
+    } catch (e) { 
+      console.log(`❌ 代理 ${proxy.url.split('/')[2]} 失败:`, e instanceof Error ? e.message : e)
+    }
   }
 
   // 方案 2：本地 Python 代理（开发环境）
@@ -237,7 +281,7 @@ async function fetchPageContent(url: string): Promise<string | null> {
     } catch { /* 代理未启动 */ }
   }
 
-  console.warn('无法抓取网页内容（可能需登录或反爬保护）')
+  console.warn('无法解析网页内容（可能需登录或反爬保护）')
   return null
 }
 
@@ -247,11 +291,11 @@ export async function generateNoteFromUrl(url: string): Promise<NoteData> {
   if (!isApiConfigured()) return generateMockNote(url)
 
   try {
-    // 先尝试抓取网页文字
+    // 先尝试解析网页文字
     const pageText = await fetchPageContent(url)
 
     if (!pageText) {
-      throw new Error('无法获取网页内容（该网站可能有反爬保护或需要登录）')
+      throw new Error('无法解析网页内容（该网站可能有反爬保护或需要登录）')
     }
 
     const aiResult = await callAI(
@@ -268,8 +312,8 @@ export async function generateNoteFromUrl(url: string): Promise<NoteData> {
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    // 网页抓取失败：直接抛错，让用户看到明确提示
-    if (msg.includes('无法获取网页内容')) throw err
+    // 网页解析失败：直接抛错，让用户看到明确提示
+    if (msg.includes('无法解析网页内容')) throw err
     // AI API 失败：降级为 mock
     console.error('AI 生成失败，使用 mock 数据:', err)
     return generateMockNote(url)
@@ -394,7 +438,7 @@ const MOCK_DIAGRAM_CONTENT = `
     <div class='grid-card'>
       <div class='grid-card-label'>📝 阶段一</div>
       <div class='grid-card-title'>内容获取</div>
-      <div class='grid-card-desc'>从 URL 或文本中抓取原始内容，支持多种输入格式</div>
+      <div class='grid-card-desc'>从 URL 或文本中解析原始内容，支持多种输入格式</div>
     </div>
     <div class='grid-card'>
       <div class='grid-card-label'>🧠 阶段二</div>

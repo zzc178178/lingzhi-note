@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { generateNoteFromUrl, generateNoteFromText } from '../utils/ai-generate'
 import { saveNote, isApiConfigured } from '../utils/storage'
@@ -9,15 +9,20 @@ type GenStatus = 'idle' | 'fetching' | 'ai' | 'done'
 
 const STATUS_CONFIG: Record<GenStatus, { label: string; step: number }> = {
   idle: { label: '生成笔记', step: 0 },
-  fetching: { label: '正在抓取网页...', step: 1 },
+  fetching: { label: '正在解析网页...', step: 1 },
   ai: { label: 'AI 分析内容...', step: 2 },
   done: { label: '生成笔记中...', step: 3 },
 }
 
-const STEPS = [
-  { num: 1, title: '抓取内容', desc: '读取网页或文字' },
+const URL_STEPS = [
+  { num: 1, title: '解析内容', desc: '读取网页内容' },
   { num: 2, title: 'AI 分析', desc: '提取核心要点' },
   { num: 3, title: '生成笔记', desc: '排版美化输出' },
+]
+
+const TEXT_STEPS = [
+  { num: 1, title: 'AI 分析', desc: '提取核心要点' },
+  { num: 2, title: '生成笔记', desc: '排版美化输出' },
 ]
 
 export default function Home() {
@@ -27,9 +32,21 @@ export default function Home() {
   const [text, setText] = useState('')
   const [status, setStatus] = useState<GenStatus>('idle')
   const [error, setError] = useState('')
+  const [showFallback, setShowFallback] = useState(false)
   const loading = status !== 'idle'
   const currentStep = STATUS_CONFIG[status].step
   const apiReady = isApiConfigured()
+
+  const steps = useMemo(() => mode === 'url' ? URL_STEPS : TEXT_STEPS, [mode])
+
+  const getActiveStepIndex = useCallback(() => {
+    if (mode === 'text') {
+      if (status === 'ai') return 1
+      if (status === 'done') return 2
+      return 0
+    }
+    return currentStep
+  }, [mode, status, currentStep])
 
   const handleGenerate = useCallback(async () => {
     setError('')
@@ -57,8 +74,19 @@ export default function Home() {
       const msg = err instanceof Error ? err.message : '生成失败，请稍后重试'
       setError(msg)
       setStatus('idle')
+      if (msg.includes('反爬') || msg.includes('无法获取') || msg.includes('无法解析')) {
+        setShowFallback(true)
+      }
     }
   }, [mode, url, text, navigate])
+
+  const switchToTextMode = () => {
+    setMode('text')
+    setShowFallback(false)
+    setError('')
+  }
+
+  const activeStep = getActiveStepIndex()
 
   return (
     <div className="home-page">
@@ -80,21 +108,42 @@ export default function Home() {
 
       {error && (
         <div className="error-banner">
-          <span>{error}</span>
-          <button onClick={handleGenerate}>重试</button>
+          <div className="error-content">
+            <span className="error-text">{error}</span>
+          </div>
+          <div className="error-actions">
+            <button className="btn-retry" onClick={handleGenerate}>重试</button>
+            {showFallback && mode === 'url' && (
+              <button className="btn-fallback" onClick={switchToTextMode}>
+                粘贴原文
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showFallback && mode === 'url' && (
+        <div className="fallback-tip">
+          <div className="fallback-tip-title">兜底方案</div>
+          <ol className="fallback-steps">
+            <li>打开该网页，全选复制（Ctrl+A → Ctrl+C）</li>
+            <li>点击上方「粘贴原文」切换到文字模式</li>
+            <li>将复制的文字粘贴到文本框</li>
+            <li>点击「生成笔记」让 AI 直接总结</li>
+          </ol>
         </div>
       )}
 
       <div className="mode-tabs">
         <button
           className={`mode-tab ${mode === 'url' ? 'active' : ''}`}
-          onClick={() => setMode('url')}
+          onClick={() => { setMode('url'); setShowFallback(false); }}
         >
           网页链接
         </button>
         <button
           className={`mode-tab ${mode === 'text' ? 'active' : ''}`}
-          onClick={() => setMode('text')}
+          onClick={() => { setMode('text'); setShowFallback(false); }}
         >
           纯文字
         </button>
@@ -112,7 +161,7 @@ export default function Home() {
         ) : (
           <textarea
             className="text-input"
-            placeholder="输入或粘贴文字内容..."
+            placeholder={showFallback ? "在此粘贴从网页复制的文字内容..." : "输入或粘贴文字内容..."}
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={8}
@@ -137,12 +186,13 @@ export default function Home() {
 
       {loading && (
         <div className="progress-steps">
-          {STEPS.map((s) => {
-            const active = currentStep >= s.num
-            const current = currentStep === s.num
+          {steps.map((s, idx) => {
+            const stepNum = idx + 1
+            const active = activeStep >= stepNum
+            const current = activeStep === stepNum
             return (
-              <div key={s.num} className={`step ${active ? 'active' : ''} ${current ? 'current' : ''}`}>
-                <div className="step-num">{active && !current ? '✓' : s.num}</div>
+              <div key={s.title} className={`step ${active ? 'active' : ''} ${current ? 'current' : ''}`}>
+                <div className="step-num">{active && !current ? '✓' : stepNum}</div>
                 <div className="step-info">
                   <div className="step-title">{s.title}</div>
                   <div className="step-desc">{s.desc}</div>

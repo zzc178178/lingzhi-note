@@ -4,6 +4,7 @@ import Note from './pages/Note'
 import Notes from './pages/Notes'
 import Settings from './pages/Settings'
 import { AboutPage } from './pages/About'
+import { TestPage } from './pages/Test'
 import { VersionNotice } from './components/VersionNotice'
 import './App.scss'
 
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/notes" element={<Notes />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/test" element={<TestPage />} />
       </Routes>
     </HashRouter>
   )
