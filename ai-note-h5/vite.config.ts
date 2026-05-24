@@ -6,7 +6,9 @@ import { version } from './package.json'
 export default defineConfig({
   define: {
     '__APP_VERSION__': JSON.stringify(version),
-    '__BUILD_TIMESTAMP__': Date.now()
+    '__BUILD_TIMESTAMP__': Date.now(),
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(version),
+    'import.meta.env.VITE_APP_BUILD_TIME': JSON.stringify(new Date().toISOString())
   },
   plugins: [
     react(),

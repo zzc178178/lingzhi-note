@@ -156,6 +156,7 @@ export default function Home() {
       <div className="bottom-nav">
         <button onClick={() => navigate('/notes')}>我的笔记</button>
         <button onClick={() => navigate('/settings')}>设置</button>
+        <button onClick={() => navigate('/about')}>关于</button>
       </div>
     </div>
   )

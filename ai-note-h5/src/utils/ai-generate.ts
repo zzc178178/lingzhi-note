@@ -169,7 +169,28 @@ async function callAI(userContent: string): Promise<AIResponse> {
 // ============ 网页内容抓取 ============
 
 async function fetchPageContent(url: string): Promise<string | null> {
-  // 方案 1：CORS 代理（在线部署也能用，无需后端）
+  // 方案 0：Netlify Serverless Function（生产环境，国内手机可用）
+  if (window.location.hostname.includes('netlify.app')) {
+    console.log('🔧 尝试使用 Netlify Function')
+    try {
+      const res = await fetch(`/api/fetch?url=${encodeURIComponent(url)}`, {
+        signal: AbortSignal.timeout(30000)
+      })
+      console.log('📡 Netlify Function 响应:', res.status, res.ok)
+      if (res.ok) {
+        const data = await res.json()
+        console.log('📦 Netlify Function 返回数据:', { ok: data.ok, hasText: !!data.text, textLen: data.text?.length })
+        if (data.ok && data.text && data.text.length >= 100) return data.text
+      } else {
+        const errText = await res.text()
+        console.error('❌ Netlify Function 错误:', res.status, errText)
+      }
+    } catch (e) {
+      console.error('❌ Netlify Function 异常:', e)
+    }
+  }
+
+  // 方案 1：CORS 代理（备选方案）
   const corsProxies = [
     'https://api.allorigins.win/raw?url=',
     'https://corsproxy.io/?',

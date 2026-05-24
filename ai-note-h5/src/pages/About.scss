@@ -1,0 +1,142 @@
+.about-page {
+  min-height: 100vh;
+  background: var(--bg-color);
+}
+
+.about-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.about-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 40px;
+  padding-top: 20px;
+}
+
+.back-btn {
+  padding: 8px 16px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  color: var(--text-color);
+  text-decoration: none;
+  font-size: 14px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+  }
+}
+
+.about-header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.about-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.app-logo-section {
+  text-align: center;
+  padding: 40px;
+  background: var(--surface-elevated);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.app-logo {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 20px;
+}
+
+.app-logo-section h2 {
+  margin: 0 0 8px;
+  font-size: 28px;
+}
+
+.version-text {
+  margin: 0 0 4px;
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.build-time {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.app-description,
+.update-history,
+.tech-info {
+  padding: 24px;
+  background: var(--surface-elevated);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.app-description h3,
+.update-history h3,
+.tech-info h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+
+.app-description p {
+  margin: 0;
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-item {
+  display: flex;
+  gap: 16px;
+  padding: 12px;
+  background: var(--bg-color);
+  border-radius: 8px;
+}
+
+.history-version {
+  font-weight: 600;
+  color: var(--primary-color);
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.history-desc {
+  color: var(--text-secondary);
+}
+
+.tech-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tech-tag {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
