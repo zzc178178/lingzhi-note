@@ -168,77 +168,89 @@ async function callAI(userContent: string): Promise<AIResponse> {
 
 // ============ 网页内容抓取 ============
 
-// 判断是否在 Netlify 部署环境
-function isNetlify() {
-  return window.location.hostname.includes('.netlify.app')
-}
+function extractTextFromHtml(html: string): string | null {
+  if (/captcha|验证|login|403|404/.test(html.substring(0, 500))) return null
 
-// 获取当前部署的服务器端代理地址
-function getServerProxyUrl(): string | null {
-  if (isNetlify()) {
-    // Netlify 部署使用 serverless function
-    return `${window.location.origin}/api/fetch`
-  }
-  
-  // 开发环境或其他部署
-  return getProxyUrl()
+  const mainMatch = html.match(/id="js_content"[^>]*>([\s\S]*?)<\/div>\s*<script/i)
+    || html.match(/class="rich_media_content[^"]*"[^>]*>([\s\S]*?)<\/div>/i)
+    || html.match(/<(?:article|main)[^>]*>([\s\S]*?)<\/(?:article|main)>/i)
+    || html.match(/<[^>]+role="main"[^>]*>([\s\S]*?)<\/[^>]+>/i)
+    || html.match(/<[^>]+class="[^"]*(?:content|article|post|entry)[^"]*"[^>]*>([\s\S]*?)<\/[^>]+>/i)
+
+  const body = mainMatch ? mainMatch[1] : html
+
+  let text = body
+    .replace(/<(script|style|nav|footer|header|aside|noscript|iframe|svg)[^>]*>[\s\S]*?<\/\1>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z]+;|&#\d+;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!text || text.length < 50) return null
+  return text
 }
 
 async function fetchPageContent(url: string): Promise<string | null> {
-  // 方案 1：服务器端代理（优先使用，反爬能力最强）
-  const serverProxy = getServerProxyUrl()
-  if (serverProxy) {
+  // 方案 1：Netlify serverless function（仅 Netlify 环境）
+  if (window.location.hostname.includes('.netlify.app')) {
     try {
-      const proxyUrl = `${serverProxy}?url=${encodeURIComponent(url)}`
-      console.log('[抓取] 使用服务器端代理:', serverProxy)
-      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(30000) })
+      const proxyUrl = `${window.location.origin}/api/fetch?url=${encodeURIComponent(url)}`
+      console.log('[抓取] 尝试 Netlify serverless function')
+      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(15000) })
       if (res.ok) {
         const data = await res.json()
-        if (data.ok && data.text && data.text.length >= 100) return data.text
+        if (data.ok && data.text && data.text.length >= 50) {
+          console.log('[抓取] Netlify function 成功')
+          return data.text
+        }
       }
+      console.warn('[抓取] Netlify function 失败，状态:', res.status)
     } catch (e: any) {
-      console.warn('[抓取] 服务器端代理失败:', e?.message)
+      console.warn('[抓取] Netlify function 异常:', e?.message)
     }
   }
 
-  // 方案 2：CORS 代理（备选方案）
+  // 方案 2：本地代理（仅开发环境）
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    const localProxy = getProxyUrl()
+    try {
+      const proxyUrl = `${localProxy}/proxy?url=${encodeURIComponent(url)}`
+      console.log('[抓取] 尝试本地代理:', localProxy)
+      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) })
+      if (res.ok) {
+        const text = await res.text()
+        if (text && text.length >= 50) return text
+      }
+    } catch (e: any) {
+      console.warn('[抓取] 本地代理失败:', e?.message)
+    }
+  }
+
+  // 方案 3：公共 CORS 代理（所有环境通用）
   const corsProxies = [
-    'https://api.allorigins.win/raw?url=',
-    'https://corsproxy.io/?',
+    { prefix: 'https://api.allorigins.win/raw?url=', format: 'direct' },
+    { prefix: 'https://corsproxy.io/?url=', format: 'direct' },
+    { prefix: 'https://api.codetabs.com/v1/proxy?quest=', format: 'direct' },
   ]
 
   for (const proxy of corsProxies) {
     try {
-      console.log('[抓取] 尝试 CORS 代理:', proxy)
-      const res = await fetch(proxy + encodeURIComponent(url), {
-        signal: AbortSignal.timeout(15000)
-      })
+      const proxyUrl = proxy.prefix + encodeURIComponent(url)
+      console.log('[抓取] 尝试 CORS 代理:', proxy.prefix)
+      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(15000) })
       if (!res.ok) continue
       const html = await res.text()
-
-      if (/captcha|验证|login|403|404/.test(html.substring(0, 500))) continue
-
-      const mainMatch = html.match(/<(?:article|main)[^>]*>([\s\S]*?)<\/(?:article|main)>/i)
-        || html.match(/<[^>]+role="main"[^>]*>([\s\S]*?)<\/[^>]+>/i)
-        || html.match(/<[^>]+class="[^"]*(?:rich_media|content|article|post|entry)[^"]*"[^>]*>([\s\S]*?)<\/[^>]+>/i)
-
-      const body = mainMatch ? mainMatch[1] : html
-
-      let text = body
-        .replace(/<(script|style|nav|footer|header|aside|noscript|iframe|svg)[^>]*>[\s\S]*?<\/\1>/gi, '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&[a-z]+;|&#\d+;/gi, ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-
-      if (!text || text.length < 100) continue
-      return text
+      const text = extractTextFromHtml(html)
+      if (text) {
+        console.log('[抓取] CORS 代理成功:', proxy.prefix)
+        return text
+      }
     } catch (e: any) {
-      console.warn('[抓取] CORS 代理失败:', proxy, e?.message)
+      console.warn('[抓取] CORS 代理失败:', proxy.prefix, e?.message)
     }
   }
 
-  console.warn('[抓取] 所有抓取方案均失败（可能需登录或反爬保护）')
+  console.warn('[抓取] 所有抓取方案均失败')
   return null
 }
 
