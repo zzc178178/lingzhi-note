@@ -43,5 +43,9 @@ export default defineConfig({
       'Pragma': 'no-cache',
       'Expires': '0'
     }
+  },
+  build: {
+    target: 'esnext',
+    minify: 'esbuild'
   }
 })
