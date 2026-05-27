@@ -28,7 +28,7 @@ export default function Note() {
 
   const handleShare = async () => {
     if (!note) return
-    const shareUrl = `${window.location.origin}/note/${note.id}`
+    const shareUrl = `${window.location.origin}${window.location.pathname}#/note/${note.id}`
     try {
       await navigator.clipboard.writeText(shareUrl)
       alert('链接已复制到剪贴板')

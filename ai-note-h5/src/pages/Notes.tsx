@@ -70,7 +70,7 @@ export default function Notes() {
                   className="card-share"
                   onClick={(e) => {
                     e.stopPropagation()
-                    const shareUrl = `${window.location.origin}/note/${note.id}`
+                    const shareUrl = `${window.location.origin}${window.location.pathname}#/note/${note.id}`
                     navigator.clipboard.writeText(shareUrl)
                       .then(() => alert('链接已复制'))
                       .catch(() => alert('复制失败'))
